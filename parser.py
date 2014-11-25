@@ -54,7 +54,8 @@ def removeStones(libertyList,game):
 
 def printGame(game):
     """Displays the game with text. X's are black, O's are white.
-    Make the shell fullscreen before printing to make sure it displays correctly."""
+    Make the shell fullscreen before printing to make sure it
+    displays correctly."""
     game = game[0]
     for i in range(19):
         for j in game[:,i]:
@@ -176,52 +177,47 @@ def createArray(fileName):
     return listOfGamePositions
 
 
-def getPlaquettes(board):
-    """Gets all 3x3 plaquettes in any given game instance."""
-    plaquettes = zeros((17,17,3,3))
-    for i in range(17):
-        for j in range(17):
-            newPlaquette = zeros((3,3))
-            for m in range(3):
-                for n in range(3):
-                    newPlaquette[m][n] = board[i+m][j+n]
-            plaquettes[i][j] = newPlaquette
-    return plaquettes
+def getPlaquette(board,position):
+    """Gets plaquette with given position at the center."""
+    plaquette = zeros((3,3))
+    x,y = position
+    for i in range(-1,2):
+        for j in range(-1,2):
+            tmpx = x+i
+            tmpy = y+j
+            if tmpx>18 or tmpx<0:
+                tmpx=0
+            if tmpy>18 or tmpy<0:
+                tmpy=0
+            plaquette[i+1][j+1] = board[tmpx][tmpy]
+    return plaquette
 
 
 def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
-    """For any sequence of two moves, find all mappings between
-    the current plaquette and all plaquettes within distance 4 in the
-    next move. Increase the weights of these mappings in the
-    adjacency matrix by 1."""
+    """For any sequence of two moves, find the mapping between
+    them in the adjacency matrix and increase its weight by 1
+    if they are less than 4 distance away from each other and
+    if the 2nd move is black's."""
 #    inpages = dict()
 #    outpages = dict()
     for i in xrange(len(listOfMoves)-1):
         print i
         move1 = listOfMoves[i][0].copy()
         move2 = listOfMoves[i+1][0].copy()
-        pieceLocationX,pieceLocationY = listOfMoves[i+1][1]
-        if move2[pieceLocationX][pieceLocationY]==-1:
-            move1 = getPlaquettes(move1)
-            move2 = getPlaquettes(move2)
-            for m in range(17):
-                for n in range(17):
-                    current = tuple([tuple(row) for row in move1[m][n]])
-                    if current in listOfPlaquettes:
-                        current = listOfPlaquettes[current]
-                    else:
-                        continue
-                    distance = range(-4,5)
-                    for dist1 in distance:
-                        for dist2 in distance:
-                            tmpx = m + dist1
-                            tmpy = n + dist2
-                            if (tmpx>=0 and tmpx<17 and (dist1!=0 or dist2!=0)
-                                    and tmpy>=0 and tmpy<17):
-                                relatedMove = tuple([tuple(row) for row in move2[tmpx][tmpy]])
-                                if relatedMove in listOfPlaquettes:
-                                    relatedMove = listOfPlaquettes[relatedMove]
-                                    adjacencyMatrix[current][relatedMove]+=1
+
+        x1,y1 = listOfMoves[i][1]
+        x2,y2 = listOfMoves[i+1][1]
+
+        if move2[x2][y2]==-1:
+            if x2<=x1+4 and x2>=x1-4 and y2<=y1+4 and y2>=y1-4: 
+                            
+                move1 = getPlaquette(move1,listOfMoves[i][1])
+                move2 = getPlaquette(move2,listOfMoves[i+1][1])
+                current = tuple([tuple(row) for row in move1])
+                current = listOfPlaquettes[current]
+                relatedMove = tuple([tuple(row) for row in move2])
+                relatedMove = listOfPlaquettes[relatedMove]
+                adjacencyMatrix[current][relatedMove]+=1
 
 
 #------------ for pagerank---------------------
@@ -253,7 +249,7 @@ def addToList(listItem,theList):
 
 
 def findPlaquettes():
-    """Finds all possible 3x3 plaquettes with an empty center and
+    """Finds all possible 3x3 plaquettes and
     assigns each of them a unique value."""
     listOfPlaquettes = set()
     mapping = dict()
@@ -266,7 +262,7 @@ def findPlaquettes():
     
     for i in range(3):
         for j in range(3):
-            if (i != 1 or j!=1) and (i!=0 or j!=0):
+            if i!=0 or j!=0:
                 newList = set()
                 for plaquette in listOfPlaquettes:
                     plaquette = getFromList(plaquette)
@@ -396,6 +392,8 @@ b = getRelations(a,listOfPlaquettes,adjacencyMatrix)
 ##for page in pr:
 ##    pra = pra + [(page, pr[page])]
 ##spra = sorted(pra, key=lambda x: x[1])
+
+            
 
 
 
