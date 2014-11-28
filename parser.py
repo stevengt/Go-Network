@@ -1,3 +1,19 @@
+
+#TODO
+
+
+#Analyze data from more games.
+#
+#Set the adjacency matrix equal to its transpose after calculating it.
+#
+#If a column contains only zeros, replace them with ones.
+#
+#Normalize adjacency matrix, i.e., make all columns sum to 1.
+#
+#Calculate the eigenvector corresponding to eigenvalue = 1 (or
+#the largest eigenvalue), this is the pagerank vector.
+
+
 from numpy import *
 
 
