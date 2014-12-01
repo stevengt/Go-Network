@@ -1,8 +1,7 @@
 
 #TODO
 
-
-#Analyze data from more games.
+#Take into account symmetry of the board to decrease the size of the CSV.
 #
 #Set the adjacency matrix equal to its transpose after calculating it.
 #
@@ -14,6 +13,7 @@
 #the largest eigenvalue), this is the pagerank vector.
 
 
+import os
 from numpy import *
 
 
@@ -116,82 +116,80 @@ def createArray(fileName):
                    - Black:-1, White:1, Blank:0
             -The location of the newly placed piece"""
 
+    try:
+        with open (fileName, "r") as myfile:
+            data=myfile.read().replace('\n', '')
 
-    #with open (fileName, "r") as myfile:
-
-
-    with open ("/home/stevengt/Downloads/kombilo/databases/kgs-19-2014-04-new/" \
-               "2014-04-01-8.sgf", "r") as myfile:
-        data=myfile.read().replace('\n', '')
-
-    readingFileInfo = True
-    readingGameInfo = False
-    currentIndex = 2
-    while readingFileInfo:
-        currentChar = data[currentIndex]
-        if currentChar is 'A':
-            currentIndex+=1
+        readingFileInfo = True
+        readingGameInfo = False
+        currentIndex = 2
+        while readingFileInfo:
             currentChar = data[currentIndex]
-            if currentChar is 'B' or currentChar is 'W': #If pieces are already on board
-                return None
-            continue
-        if currentChar is ';':
-            readingFileInfo = False
-            readingGameInfo = True
-        currentIndex += 1
+            if currentChar is 'A':
+                currentIndex+=1
+                currentChar = data[currentIndex]
+                if currentChar is 'B' or currentChar is 'W': #If pieces are already on board
+                    return None
+                continue
+            if currentChar is ';':
+                readingFileInfo = False
+                readingGameInfo = True
+            currentIndex += 1
 
-    listOfGamePositions = []
-    currentGameMove = 0
+        listOfGamePositions = []
+        currentGameMove = 0
 
 
-    while readingGameInfo:
-        currentIndex+=1
-        if data[currentIndex] is ')':
-            readingGameInfo = False
-        if data[currentIndex] is '[':
+        while readingGameInfo:
             currentIndex+=1
-            x = labels[data[currentIndex]]
-            currentIndex+=1
-            y = labels[data[currentIndex]]
-            if currentGameMove != 0:
-                libertyList = []
-                visited = set()      
-                newGame = listOfGamePositions[currentGameMove-1][0].copy()
+            if data[currentIndex] is ')':
+                readingGameInfo = False
+            if data[currentIndex] is '[':
+                currentIndex+=1
+                x = labels[data[currentIndex]]
+                currentIndex+=1
+                y = labels[data[currentIndex]]
+                if currentGameMove != 0:
+                    libertyList = []
+                    visited = set()      
+                    newGame = listOfGamePositions[currentGameMove-1][0].copy()
 
-                if currentGameMove%2 == 0:
-                    isWhite = -1
+                    if currentGameMove%2 == 0:
+                        isWhite = -1
+                    else:
+                        isWhite = 1
+
+                    newGame[x][y] = isWhite
+                    
+                    for i in (-1,1):
+                        tmpx = x+i
+                        if tmpx<19 and tmpx>=0 and newGame[tmpx][y] == -isWhite:
+                            libertyList.append((tmpx,y))
+                            visited.add((tmpx,y))
+                    for j in (-1,1):
+                        tmpy = y+j
+                        if tmpy<19 and tmpy>=0 and newGame[x][tmpy] == -isWhite:
+                            libertyList.append((x,tmpy))
+                            visited.add((x,tmpy))
+                            
+                    
+                    addAdjacentToList(visited,libertyList,newGame,isWhite)
+
+                    if hasLiberties(visited,newGame)==False:
+                        removeStones(visited,newGame)
+                    
+                    
+                    listOfGamePositions.append((newGame,(x,y)))
                 else:
-                    isWhite = 1
+                    newGame = zeros((19,19))
+                    newGame[x][y] = -1
+                    listOfGamePositions.append((newGame,(x,y)))
+                currentGameMove += 1
 
-                newGame[x][y] = isWhite
-                
-                for i in (-1,1):
-                    tmpx = x+i
-                    if tmpx<19 and tmpx>=0 and newGame[tmpx][y] == -isWhite:
-                        libertyList.append((tmpx,y))
-                        visited.add((tmpx,y))
-                for j in (-1,1):
-                    tmpy = y+j
-                    if tmpy<19 and tmpy>=0 and newGame[x][tmpy] == -isWhite:
-                        libertyList.append((x,tmpy))
-                        visited.add((x,tmpy))
-                        
-                
-                addAdjacentToList(visited,libertyList,newGame,isWhite)
-
-                if hasLiberties(visited,newGame)==False:
-                    removeStones(visited,newGame)
-                
-                
-                listOfGamePositions.append((newGame,(x,y)))
-            else:
-                newGame = zeros((19,19))
-                newGame[x][y] = -1
-                listOfGamePositions.append((newGame,(x,y)))
-            currentGameMove += 1
-
-    return listOfGamePositions
-
+        return listOfGamePositions
+    
+    except:
+        return None
 
 def getPlaquette(board,position):
     """Gets plaquette with given position at the center."""
@@ -214,10 +212,8 @@ def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
     them in the adjacency matrix and increase its weight by 1
     if they are less than 4 distance away from each other and
     if the 2nd move is black's."""
-#    inpages = dict()
-#    outpages = dict()
+
     for i in xrange(len(listOfMoves)-1):
-        print i
         move1 = listOfMoves[i][0].copy()
         move2 = listOfMoves[i+1][0].copy()
 
@@ -235,18 +231,6 @@ def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
                 relatedMove = listOfPlaquettes[relatedMove]
                 adjacencyMatrix[current][relatedMove]+=1
 
-
-#------------ for pagerank---------------------
-                                    #if relatedMove in outpages:
-                                        #outpages[relatedMove] = 0
-                                    #else:
-                                        #outpages[relatedMove] = 0
-                                    #if relatedMove not in inpages:
-                                        #inpages[relatedMove] = [current]
-                                    #else:
-                                        #inpages[relatedMove] = inpages[relatedMove] + [current]
- #   return inpages,outpages
- #-----------------------------------------------
     return adjacencyMatrix
 
 
@@ -289,127 +273,24 @@ def findPlaquettes():
                 listOfPlaquettes = listOfPlaquettes | newList
                 
     for i,plaquette in enumerate(listOfPlaquettes):
-        mapping[plaquette]=i # should this be mapping[i] = plaquettes ?
+        mapping[plaquette]=i
 
     dim = len(mapping)
     adjacencyMatrix = zeros((dim,dim))
     return (mapping,adjacencyMatrix)
 
-
-
-
-
-
-
-
-
-
-# Pagerank code --------------------------------------------------------------
-
-from math import log, pow, floor
-
-def getSinks(outpages):
-    return filter(lambda x: outpages[x] == 0, outpages)
-
-def preplexity(pr):
-    preplex = 0
-    for page in pr:
-        preplex += pr[page] * log(1.0/pr[page], 2)
-    return pow(2, preplex)
-
-def preplexfour(preplex):
-    prep = map(lambda x: floor(x), preplex)
-    prep0 = prep[0]
-    prep = map(lambda x: x == prep0, prep)
-    return len(prep) >= 4 and all(prep)
-
-def loadFile(path):
-    inpages = {}
-    outpages = {}
-    with open(path) as f:
-        for line in f:
-            splits = line.split(' ')
-            splits = filter(lambda x: x != '\n', splits)
-            splits = map(lambda x: x.replace('\n',''), splits)
-            page = splits[0]
-            if page in inpages:
-                inpages[page] = inpages[page] + splits[1:]
-            else:
-                inpages[page] = splits[1:]
-            if not page in outpages:
-                outpages[page] = 0
-            for inpage in splits[1:]:
-                if inpage in outpages:
-                    outpages[inpage] += 1
-                else:
-                    outpages[inpage] = 1
-    print inpages
-    return (inpages, outpages)
-
-def pageRank(inpages, outpages):
-    pageRank = {}
-    sinkpages = getSinks(outpages)
-    N = len(inpages)
-    d = 0.85
-    idx = 0
-    preplex = []
-
-    for page in inpages:
-        pageRank[page] = 1.0/N
-    
-    prep = preplexity(pageRank)
-    preplex = preplex + [prep]
-
-    while not preplexfour(preplex[-4:]):
-        newPR = {}
-        sinkPR = 0
-        for sink in sinkpages:
-            sinkPR += pageRank[sink]
-        for page in inpages:
-            newPR[page] = (1.0-d)/N
-            newPR[page] += d*sinkPR/N
-            for inlink in inpages[page]:
-                newPR[page] += d* pageRank[inlink]/outpages[inlink]
-        for page in newPR:
-            pageRank[page] = newPR[page]
-        idx += 1
-        prep = preplexity(pageRank)
-        preplex = preplex + [prep]
-                    
-    for prep in preplex:
-        print prep
-    return pageRank
-
-def main():
-    #i,o = loadFile('wt2g_inlinks')
-    pr = pageRank(i,o)
-    pra = []
-    for page in pr:
-        pra = pra + [(page, pr[page])]
-    spra = sorted(pra, key=lambda x: x[1])
-    #for p,r in spra[-10:]:
-     #   print p, r
-
-
-
-#-----------------------------------------------------------------------------
-
-
+i=0
 listOfPlaquettes,adjacencyMatrix = findPlaquettes()
-a = createArray("")
-printGame(a[-1])
-b = getRelations(a,listOfPlaquettes,adjacencyMatrix)
+directoryName = "/home/stevengt/Downloads/kombilo/databases/databases"
+for fileName in os.listdir(directoryName):
+    a = createArray(directoryName+"/"+fileName)
+    if a is not None:
+        adjacencyMatrix = getRelations(a,listOfPlaquettes,adjacencyMatrix)
+        print "%20s     %d" % (fileName,i)
+        i += 1
 
-#row_sums = adjacencyMatrix.sum(axis=1)
-#new_matrix = adjacencyMatrix / row_sums[:,newaxis]
-##
-##pr = pageRank(b[0],b[1])
-##pra = []
-##for page in pr:
-##    pra = pra + [(page, pr[page])]
-##spra = sorted(pra, key=lambda x: x[1])
+savetxt("adjacencyMatrix.csv", adjacencyMatrix, delimiter=",")
 
-            
 
 
 
