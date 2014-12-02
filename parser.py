@@ -198,8 +198,7 @@ def getPlaquette(board,position):
 def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
     """For any sequence of two moves, find the mapping between
     them in the adjacency matrix and increase its weight by 1
-    if they are less than 4 distance away from each other and
-    if the 2nd move is black's."""
+    if they are less than 4 distance away from each other."""
 
     for i in xrange(len(listOfMoves)-1):
         move1 = listOfMoves[i][0].copy()
@@ -208,8 +207,6 @@ def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
         x1,y1 = listOfMoves[i][1]
         x2,y2 = listOfMoves[i+1][1]
 
-        if move2[x2][y2]!=-1:
-	    print "wtf"
         if x2<=x1+4 and x2>=x1-4 and y2<=y1+4 and y2>=y1-4: 
                             
             move1 = getPlaquette(move1,listOfMoves[i][1])
