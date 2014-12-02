@@ -1,19 +1,8 @@
 
-#TODO
-
-#Take into account symmetry of the board to decrease the size of the CSV.
-#
-#Set the adjacency matrix equal to its transpose after calculating it.
-#
-#If a column contains only zeros, replace them with ones.
-#
-#Normalize adjacency matrix, i.e., make all columns sum to 1.
-#
-#Calculate the eigenvector corresponding to eigenvalue = 1 (or
-#the largest eigenvalue), this is the pagerank vector.
-
 
 import os
+import pickle
+import scipy.linalg as la
 from numpy import *
 
 
@@ -186,7 +175,7 @@ def createArray(fileName):
                     listOfGamePositions.append((newGame,(x,y)))
                 currentGameMove += 1
 
-        return listOfGamePositions
+        return listOfGamePositions[0::2] #returns all black moves
     
     except:
         return None
@@ -199,11 +188,10 @@ def getPlaquette(board,position):
         for j in range(-1,2):
             tmpx = x+i
             tmpy = y+j
-            if tmpx>18 or tmpx<0:
-                tmpx=0
-            if tmpy>18 or tmpy<0:
-                tmpy=0
-            plaquette[i+1][j+1] = board[tmpx][tmpy]
+            if tmpx>18 or tmpx<0 or tmpy>18 or tmpy<0:
+                plaquette[i+1][j+1]=0
+            else:
+		plaquette[i+1][j+1] = board[tmpx][tmpy]
     return plaquette
 
 
@@ -220,16 +208,21 @@ def getRelations(listOfMoves,listOfPlaquettes,adjacencyMatrix):
         x1,y1 = listOfMoves[i][1]
         x2,y2 = listOfMoves[i+1][1]
 
-        if move2[x2][y2]==-1:
-            if x2<=x1+4 and x2>=x1-4 and y2<=y1+4 and y2>=y1-4: 
+        if move2[x2][y2]!=-1:
+	    print "wtf"
+        if x2<=x1+4 and x2>=x1-4 and y2<=y1+4 and y2>=y1-4: 
                             
-                move1 = getPlaquette(move1,listOfMoves[i][1])
-                move2 = getPlaquette(move2,listOfMoves[i+1][1])
-                current = tuple([tuple(row) for row in move1])
-                current = listOfPlaquettes[current]
-                relatedMove = tuple([tuple(row) for row in move2])
-                relatedMove = listOfPlaquettes[relatedMove]
-                adjacencyMatrix[current][relatedMove]+=1
+            move1 = getPlaquette(move1,listOfMoves[i][1])
+            move2 = getPlaquette(move2,listOfMoves[i+1][1])
+
+	    move1[1][1] = 0
+	    move2[1][1] = 0		
+		
+            current = tuple([tuple(row) for row in move1])
+            current = listOfPlaquettes[current]
+            relatedMove = tuple([tuple(row) for row in move2])
+            relatedMove = listOfPlaquettes[relatedMove]
+            adjacencyMatrix[current][relatedMove]+=1
 
     return adjacencyMatrix
 
@@ -249,8 +242,8 @@ def addToList(listItem,theList):
 
 
 def findPlaquettes():
-    """Finds all possible 3x3 plaquettes and
-    assigns each of them a unique value."""
+    """Finds all possible 3x3 plaquettes with an empty center 
+    and assigns each of them a unique value."""
     listOfPlaquettes = set()
     mapping = dict()
 
@@ -262,7 +255,7 @@ def findPlaquettes():
     
     for i in range(3):
         for j in range(3):
-            if i!=0 or j!=0:
+            if (i!=0 or j!=0) and (i!=1 or j!=1):
                 newList = set()
                 for plaquette in listOfPlaquettes:
                     plaquette = getFromList(plaquette)
@@ -281,18 +274,42 @@ def findPlaquettes():
 
 i=0
 listOfPlaquettes,adjacencyMatrix = findPlaquettes()
-directoryName = "/home/stevengt/Downloads/kombilo/databases/databases"
+directoryName = "/home/stevengt/Downloads/kombilo/databases/database"
+print len(adjacencyMatrix)
 for fileName in os.listdir(directoryName):
     a = createArray(directoryName+"/"+fileName)
     if a is not None:
         adjacencyMatrix = getRelations(a,listOfPlaquettes,adjacencyMatrix)
         print "%20s     %d" % (fileName,i)
         i += 1
+print len(adjacencyMatrix)
+temp = zeros((len(adjacencyMatrix)))
 
-savetxt("adjacencyMatrix.csv", adjacencyMatrix, delimiter=",")
+for indexI,i in enumerate(adjacencyMatrix):
+    if array_equal(i,temp):
+        for indexJ,j in enumerate(i):
+            adjacencyMatrix[indexI][indexJ]=1.0
+
+for i in adjacencyMatrix:
+    rowSum = sum(i)
+    for j in i:
+        j = j/float(rowSum)
+
+size = len(adjacencyMatrix)
+alpha = 0.85
 
 
 
+adjacencyMatrix = alpha*adjacencyMatrix+(1-alpha)/size
+
+adjacencyMatrix = adjacencyMatrix.T
+
+googleMatrix = adjacencyMatrix
+
+v,w = la.eig(googleMatrix)
+
+pickle.dump( v, open( "v.p", "wb" ) )
+pickle.dump( w, open( "w.p", "wb" ) )
 
 
 
