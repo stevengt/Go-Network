@@ -243,6 +243,7 @@ def findPlaquettes():
     and assigns each of them a unique value."""
     listOfPlaquettes = set()
     mapping = dict()
+    reverseMapping = dict()
 
     for k in range(-1,2):
         new = zeros((3,3))
@@ -264,13 +265,14 @@ def findPlaquettes():
                 
     for i,plaquette in enumerate(listOfPlaquettes):
         mapping[plaquette]=i
+	reverseMapping[i]=plaquette
 
     dim = len(mapping)
     adjacencyMatrix = zeros((dim,dim))
-    return (mapping,adjacencyMatrix)
+    return (mapping,reverseMapping,adjacencyMatrix)
 
 i=0
-listOfPlaquettes,adjacencyMatrix = findPlaquettes()
+listOfPlaquettes,reverseMapping,adjacencyMatrix = findPlaquettes()
 directoryName = "/home/stevengt/Downloads/kombilo/databases/database"
 print len(adjacencyMatrix)
 for fileName in os.listdir(directoryName):
@@ -287,10 +289,10 @@ for indexI,i in enumerate(adjacencyMatrix):
         for indexJ,j in enumerate(i):
             adjacencyMatrix[indexI][indexJ]=1.0
 
-for i in adjacencyMatrix:
+for indexI,i in enumerate(adjacencyMatrix):
     rowSum = sum(i)
-    for j in i:
-        j = j/float(rowSum)
+    for indexJ,j in enumerate(i):
+        adjacencyMatrix[indexI][indexJ] = adjacencyMatrix[indexI][indexJ]/float(rowSum)
 
 size = len(adjacencyMatrix)
 alpha = 0.85
