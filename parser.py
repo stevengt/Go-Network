@@ -175,7 +175,7 @@ def createArray(fileName):
                     listOfGamePositions.append((newGame,(x,y)))
                 currentGameMove += 1
 
-        return listOfGamePositions[0::2] #returns all black moves
+        return listOfGamePositions
     
     except:
         return None
@@ -309,6 +309,16 @@ v,w = la.eig(googleMatrix)
 
 pickle.dump( v, open( "v.p", "wb" ) )
 pickle.dump( w, open( "w.p", "wb" ) )
+
+indexValuePairs = [(i,val) for i,val in enumerate(v)]
+indexValuePairs.sort(key = lambda x : x[1])
+
+for i in range(1,11):
+    index = indexValuePairs[-i][0]
+    currentVector = w[:,i]
+    pickle.dump( currentVector , open( str(i)+".p", "wb" ) )
+
+
 
 
 
